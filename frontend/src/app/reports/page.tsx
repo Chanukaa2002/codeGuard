@@ -51,7 +51,7 @@ export default function ReportsPage() {
           const data = await res.json();
           setReports(data);
         } else {
-          console.error('Failed to fetch reports');
+          console.error('Failed to fetch reports', await res.text());
         }
       } catch (err) {
         console.error('Error fetching reports:', err);
@@ -73,7 +73,7 @@ export default function ReportsPage() {
 
   return (
     <AppLayout user={user}>
-      <div className="max-w-7xl mx-auto py-2 w-full">
+      <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
         <div className="max-w-4xl mx-auto space-y-6">
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2">
@@ -128,9 +128,9 @@ export default function ReportsPage() {
                         {report.repositoryName}
                       </h3>
                       <p className="text-sm text-slate-400 mt-2 mb-4 group-hover:text-slate-300 transition-colors">
-                        Analyzed branch: <span className="font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded">{report.branchName}</span>
+                        Analyzed branch: <span className="font-mono text-xs bg-white/5 px-1.5 py-0.5 rounded break-all">{report.branchName}</span>
                       </p>
-                      <div className="flex items-center gap-5 text-xs text-slate-500 font-medium">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-xs text-slate-500 font-medium">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${report.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'}`} />
                           <span className="capitalize">{report.status}</span>

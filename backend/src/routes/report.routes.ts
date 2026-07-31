@@ -4,6 +4,9 @@ import { PrismaClient } from '../generated/prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { redis } from '../utils/redis';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const router = Router();
 

@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout user={user}>
-      <div className="max-w-7xl mx-auto py-2 w-full">
+      <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Main Dashboard Area */}
@@ -118,11 +118,11 @@ export default function DashboardPage() {
 
             {/* Repositories */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase">Your Repositories</h3>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase hidden sm:block">Your Repositories</h3>
                 
                 {/* Search Input */}
-                <div className="flex-1 max-w-sm mx-4">
+                <div className="flex-1 w-full md:max-w-sm md:mx-4">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-indigo-500/10 blur rounded-full group-focus-within:bg-indigo-500/20 transition-colors" />
                     <input 
@@ -136,7 +136,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Pagination Controls */}
-                <div className="flex items-center gap-3 bg-white/[0.02] border border-white/10 rounded-full px-3 py-1 backdrop-blur-md">
+                <div className="flex items-center justify-center sm:justify-start gap-3 bg-white/[0.02] border border-white/10 rounded-full px-3 py-1 backdrop-blur-md self-start sm:self-auto">
                   <button 
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1 || isReposLoading}
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                           {repo.description && (
                            <p className="text-sm text-slate-400 mt-1.5 max-w-xl line-clamp-1 group-hover:text-slate-300 transition-colors">{repo.description}</p>
                           )}
-                          <div className="flex items-center gap-5 text-xs text-slate-500 mt-3 font-medium">
+                          <div className="flex flex-wrap items-center gap-5 text-xs text-slate-500 mt-3 font-medium">
                             {repo.language && (
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]" />

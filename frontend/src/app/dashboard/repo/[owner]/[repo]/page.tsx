@@ -103,7 +103,7 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
 
   return (
     <AppLayout user={user}>
-      <div className="max-w-5xl mx-auto py-8 px-4 w-full">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 w-full">
         
         {/* Navigation */}
         <button 
@@ -124,7 +124,7 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 flex items-center gap-3">
+                <h2 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 flex items-center gap-2 sm:gap-3 break-all">
                   {owner} <span className="text-slate-600 font-light">/</span> {repo}
                 </h2>
                 <p className="text-sm text-slate-400 mt-2">Configure and run security scans for this repository.</p>
