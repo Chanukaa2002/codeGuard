@@ -1,3 +1,12 @@
-node_modules
-*/node_modules
-*.env
+node_modules/
+dist/
+build/
+.next/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+coverage/
+.turbo/
+backend/src/generated/prisma/
