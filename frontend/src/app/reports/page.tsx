@@ -118,7 +118,11 @@ export default function ReportsPage() {
               </div>
             ) : (
               reports.map((report) => (
-                <div key={report.id} className="flex items-start justify-between p-6 border-b border-white/5 last:border-b-0 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group">
+                <div 
+                  key={report.id} 
+                  onClick={() => router.push(`/reports/${report.id}`)}
+                  className="flex items-start justify-between p-6 border-b border-white/5 last:border-b-0 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group"
+                >
                   <div className="flex items-start gap-4">
                     <div className="mt-1 p-2 bg-white/5 rounded-xl border border-white/5 group-hover:border-indigo-500/30 group-hover:bg-indigo-500/10 transition-colors">
                       <FileText className="w-5 h-5 text-slate-400 group-hover:text-indigo-400 transition-colors" />
