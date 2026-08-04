@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
-import { ChevronLeft, ExternalLink, GitBranch, Shield, Loader2, Search } from 'lucide-react';
+import { ChevronLeft, ExternalLink, GitBranch, Shield, Loader2, Search, X } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 
 interface Branch {
@@ -29,6 +29,17 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
   const [scanComplete, setScanComplete] = useState(false);
   const [scanReport, setScanReport] = useState<any>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleCancelScan = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    setIsScanning(false);
+    setScanError('Scanning was cancelled by the user.');
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -117,7 +128,7 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
       const { reportId } = await res.json();
       
       // Poll for completion
-      const pollInterval = setInterval(async () => {
+      pollIntervalRef.current = setInterval(async () => {
         try {
           const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/reports/${reportId}`, {
             headers: {
@@ -127,7 +138,8 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
           if (checkRes.ok) {
             const reportData = await checkRes.json();
             if (reportData.status === 'completed' || reportData.status === 'failed') {
-              clearInterval(pollInterval);
+              if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+              pollIntervalRef.current = null;
               setIsScanning(false);
               setScanComplete(true);
               setScanReport(reportData);
@@ -154,8 +166,39 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
   }
 
   return (
-    <AppLayout user={user}>
-      <div className="max-w-5xl mx-auto py-8 px-4 w-full">
+    <>
+      {isScanning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-indigo-950/90 border border-indigo-500/30 rounded-2xl p-8 max-w-sm w-full shadow-[0_0_40px_rgba(99,102,241,0.15)] flex flex-col items-center relative overflow-hidden transform transition-all animate-in zoom-in-95 duration-300 text-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 pointer-events-none" />
+            
+            <div className="relative z-10 w-full flex flex-col items-center">
+              <div className="relative flex items-center justify-center mb-6">
+                <div className="w-20 h-20 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="absolute flex items-center justify-center w-full h-full">
+                  <Shield className="w-8 h-8 text-indigo-400 animate-pulse" />
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold text-white mb-2">Analysis in Progress</h3>
+              <p className="text-sm text-slate-300 mb-8">
+                Please wait while we scan your repository for security vulnerabilities and code quality issues.
+              </p>
+              
+              <button
+                onClick={handleCancelScan}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 transition-colors font-medium"
+              >
+                <X className="w-4 h-4" />
+                Cancel Scanning
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AppLayout user={user}>
+        <div className="max-w-5xl mx-auto py-8 px-4 w-full">
         
         {/* Navigation */}
         <button 
@@ -295,7 +338,10 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
                           <div key={idx} className="bg-[#050505]/50 border border-emerald-500/20 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-semibold text-emerald-300">{issue.title}</span>
-                              <span className="text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-500/20">{issue.severity}</span>
+                              <div className="flex gap-2">
+                                {issue.category && <span className="text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">{issue.category}</span>}
+                                <span className="text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-500/20">{issue.severity}</span>
+                              </div>
                             </div>
                             <p className="text-sm text-emerald-400/80">{issue.description}</p>
                             {issue.file && (
@@ -307,6 +353,15 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
                     ) : (
                       <p className="text-sm text-emerald-400/80">No issues found in this repository!</p>
                     )}
+                    <div className="mt-6 pt-4 border-t border-emerald-500/20 flex items-center justify-between">
+                      <p className="text-sm text-emerald-400/80">For more info go to:</p>
+                      <button 
+                        onClick={() => router.push(`/reports/${scanReport.id}`)}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                      >
+                        View Full Report
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <p className="text-sm text-red-400/80">An error occurred during analysis. Please try again later.</p>
@@ -340,5 +395,6 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
         </div>
       </div>
     </AppLayout>
+    </>
   );
 }

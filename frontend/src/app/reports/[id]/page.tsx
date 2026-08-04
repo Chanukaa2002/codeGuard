@@ -165,9 +165,16 @@ export default function ReportDetailsPage({ params }: { params: Promise<{ id: st
                   <div className="p-6 border-b border-white/5 bg-[#050505]/30">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-3">
                       <h3 className="text-xl font-semibold text-slate-200">{issue.title}</h3>
-                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getSeverityColor(issue.severity)}`}>
-                        {getSeverityIcon(issue.severity)}
-                        {issue.severity}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {issue.category && (
+                          <div className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border bg-purple-500/10 text-purple-400 border-purple-500/20">
+                            {issue.category}
+                          </div>
+                        )}
+                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getSeverityColor(issue.severity)}`}>
+                          {getSeverityIcon(issue.severity)}
+                          {issue.severity}
+                        </div>
                       </div>
                     </div>
                     

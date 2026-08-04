@@ -52,6 +52,11 @@ export default function DashboardPage() {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [showOnboardingPopup, setShowOnboardingPopup] = useState(false);
+  const [openRouterKey, setOpenRouterKey] = useState('');
+  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash');
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+
   // Client-side pagination and filtering
   const filteredRepos = repos.filter(repo => 
     repo.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -63,7 +68,7 @@ export default function DashboardPage() {
   const paginatedRepos = filteredRepos.slice((page - 1) * reposPerPage, page * reposPerPage);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndConfig = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -72,10 +77,34 @@ export default function DashboardPage() {
       }
       
       setUser(session.user);
+
+      // Check if user has AI config set
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/config`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          }
+        });
+        if (res.ok) {
+          const config = await res.json();
+          // config can be null if the user hasn't synced yet or doesn't exist
+          if (!config || !config.openRouterKey) {
+            setShowOnboardingPopup(true);
+          }
+        } else {
+          // If the request fails, it might be because the user doesn't have a config yet.
+          setShowOnboardingPopup(true);
+        }
+      } catch (err) {
+        console.error('Failed to fetch AI config:', err);
+        // Fallback to showing it if we can't determine
+        setShowOnboardingPopup(true);
+      }
+
       setIsLoading(false);
     };
     
-    fetchUser();
+    fetchUserAndConfig();
   }, [router]);
 
   useEffect(() => {
@@ -123,9 +152,106 @@ export default function DashboardPage() {
     );
   }
 
+  const handleSaveOnboarding = async () => {
+    if (!openRouterKey.trim()) return;
+    setIsSavingConfig(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          openRouterKey,
+          aiModel: selectedModel,
+        }),
+      });
+      
+      if (res.ok) {
+        setShowOnboardingPopup(false);
+      } else {
+        alert('Failed to save AI configuration. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving configuration.');
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
   return (
-    <AppLayout user={user}>
-      <div className="max-w-7xl mx-auto py-2 w-full">
+    <>
+      {showOnboardingPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+          <div className="bg-indigo-950/90 border border-indigo-500/30 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 pointer-events-none" />
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold text-white mb-4">Welcome to CodeGuard AI</h2>
+              <p className="text-slate-300 mb-6 text-sm leading-relaxed">
+                To start scanning your repositories for security vulnerabilities, you need to configure your AI model and API key. 
+                CodeGuard uses OpenRouter to provide access to various LLMs.
+              </p>
+              
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-indigo-200">OpenRouter API Key</label>
+                  <input 
+                    type="password" 
+                    placeholder="sk-or-v1-..."
+                    value={openRouterKey}
+                    onChange={(e) => setOpenRouterKey(e.target.value)}
+                    className="w-full bg-[#050505]/50 border border-indigo-500/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white placeholder:text-slate-500"
+                  />
+                  <p className="text-xs text-indigo-300/70 mt-2">
+                    Get your key from <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">openrouter.ai/keys</a>. For free models, check <a href="https://openrouter.ai/collections/free-models" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">free-models</a>.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-indigo-200">Language Model</label>
+                  <select 
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="w-full bg-[#050505]/50 border border-indigo-500/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white appearance-none"
+                  >
+                    <option className="bg-[#050505]" value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option className="bg-[#050505]" value="google/gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <option className="bg-[#050505]" value="openai/gpt-4o-mini">GPT-4o Mini</option>
+                    <option className="bg-[#050505]" value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                  </select>
+                  <p className="text-xs text-indigo-300/70 mt-2">
+                    You can always change these settings later in the <span className="font-semibold text-indigo-300">AI Configuration</span> section of your Profile tab.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowOnboardingPopup(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                >
+                  Skip for now
+                </button>
+                <button
+                  onClick={handleSaveOnboarding}
+                  disabled={!openRouterKey.trim() || isSavingConfig}
+                  className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 disabled:hover:bg-indigo-500 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                >
+                  {isSavingConfig && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                  Save & Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <AppLayout user={user}>
+        <div className="max-w-7xl mx-auto py-2 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Main Dashboard Area */}
@@ -300,5 +426,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </AppLayout>
+    </>
   );
 }
