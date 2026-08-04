@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Shield, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Shield, LogOut, Settings, User as UserIcon, Menu, X, LayoutDashboard, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -16,13 +17,36 @@ export default function Navbar({ user }: NavbarProps) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    localStorage.removeItem('github_provider_token');
+    router.push('/');
   };
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const links = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Reports', href: '/reports', icon: FileText },
+    { name: 'Profile', href: '/profile', icon: UserIcon },
+  ];
 
   return (
     <nav className="bg-white/[0.02] border-b border-white/10 backdrop-blur-xl relative z-50">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-end h-16">
+        <div className="flex items-center justify-between md:justify-end h-16">
+          
+          {/* Mobile Menu Button & Brand */}
+          <div className="flex items-center gap-3 md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-indigo-400" />
+              <span className="font-bold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">CodeGuard</span>
+            </Link>
+          </div>
 
           
           <div className="flex items-center gap-3">
@@ -44,6 +68,43 @@ export default function Navbar({ user }: NavbarProps) {
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-[#0d1117] border-b border-white/10 shadow-2xl z-50">
+          <div className="px-4 pt-2 pb-6 space-y-1">
+            {links.map((link) => {
+              const Icon = link.icon;
+              const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                    isActive
+                      ? 'bg-indigo-500/10 text-indigo-400'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} />
+                  <span className="font-medium">{link.name}</span>
+                </Link>
+              );
+            })}
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleLogout();
+              }}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-300 mt-2 border-t border-white/5"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Sign out</span>
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

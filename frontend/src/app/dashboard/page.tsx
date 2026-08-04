@@ -185,73 +185,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <>
-      {showOnboardingPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-          <div className="bg-indigo-950/90 border border-indigo-500/30 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 pointer-events-none" />
-            <div className="relative z-10">
-              <h2 className="text-2xl font-bold text-white mb-4">Welcome to CodeGuard AI</h2>
-              <p className="text-slate-300 mb-6 text-sm leading-relaxed">
-                To start scanning your repositories for security vulnerabilities, you need to configure your AI model and API key. 
-                CodeGuard uses OpenRouter to provide access to various LLMs.
-              </p>
-              
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm font-semibold mb-2 text-indigo-200">OpenRouter API Key</label>
-                  <input 
-                    type="password" 
-                    placeholder="sk-or-v1-..."
-                    value={openRouterKey}
-                    onChange={(e) => setOpenRouterKey(e.target.value)}
-                    className="w-full bg-[#050505]/50 border border-indigo-500/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white placeholder:text-slate-500"
-                  />
-                  <p className="text-xs text-indigo-300/70 mt-2">
-                    Get your key from <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">openrouter.ai/keys</a>. For free models, check <a href="https://openrouter.ai/collections/free-models" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">free-models</a>.
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-2 text-indigo-200">Language Model</label>
-                  <select 
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full bg-[#050505]/50 border border-indigo-500/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white appearance-none"
-                  >
-                    <option className="bg-[#050505]" value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
-                    <option className="bg-[#050505]" value="google/gemini-1.5-pro">Gemini 1.5 Pro</option>
-                    <option className="bg-[#050505]" value="openai/gpt-4o-mini">GPT-4o Mini</option>
-                    <option className="bg-[#050505]" value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-                  </select>
-                  <p className="text-xs text-indigo-300/70 mt-2">
-                    You can always change these settings later in the <span className="font-semibold text-indigo-300">AI Configuration</span> section of your Profile tab.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setShowOnboardingPopup(false)}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-indigo-300 hover:bg-indigo-500/10 transition-colors"
-                >
-                  Skip for now
-                </button>
-                <button
-                  onClick={handleSaveOnboarding}
-                  disabled={!openRouterKey.trim() || isSavingConfig}
-                  className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 disabled:hover:bg-indigo-500 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(99,102,241,0.3)]"
-                >
-                  {isSavingConfig && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
-                  Save & Continue
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <AppLayout user={user}>
-        <div className="max-w-7xl mx-auto py-2 w-full">
+    <AppLayout user={user}>
+      <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Main Dashboard Area */}
@@ -266,11 +201,11 @@ export default function DashboardPage() {
 
             {/* Repositories */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase">Your Repositories</h3>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase hidden sm:block">Your Repositories</h3>
                 
                 {/* Search Input */}
-                <div className="flex-1 max-w-sm mx-4">
+                <div className="flex-1 w-full md:max-w-sm md:mx-4">
                   <div className="relative group">
                     <div className="absolute inset-0 bg-indigo-500/10 blur rounded-full group-focus-within:bg-indigo-500/20 transition-colors" />
                     <input 
@@ -284,7 +219,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Pagination Controls */}
-                <div className="flex items-center gap-3 bg-white/[0.02] border border-white/10 rounded-full px-3 py-1 backdrop-blur-md">
+                <div className="flex items-center justify-center sm:justify-start gap-3 bg-white/[0.02] border border-white/10 rounded-full px-3 py-1 backdrop-blur-md self-start sm:self-auto">
                   <button 
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1 || isReposLoading}
@@ -341,7 +276,7 @@ export default function DashboardPage() {
                           {repo.description && (
                            <p className="text-sm text-slate-400 mt-1.5 max-w-xl line-clamp-1 group-hover:text-slate-300 transition-colors">{repo.description}</p>
                           )}
-                          <div className="flex items-center gap-5 text-xs text-slate-500 mt-3 font-medium">
+                          <div className="flex flex-wrap items-center gap-5 text-xs text-slate-500 mt-3 font-medium">
                             {repo.language && (
                               <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${getLanguageColor(repo.language)}`} />
