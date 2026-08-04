@@ -68,4 +68,61 @@ router.post('/sync', async (req, res) => {
   }
 });
 
+router.get('/config', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { openRouterKey: true, aiModel: true },
+    });
+
+    res.json(dbUser);
+  } catch (error: any) {
+    console.error('Error fetching config:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/config', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const { openRouterKey, aiModel } = req.body;
+
+    const dbUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        openRouterKey: openRouterKey !== undefined ? openRouterKey : undefined,
+        aiModel: aiModel !== undefined ? aiModel : undefined,
+      },
+    });
+
+    res.json({ message: 'Configuration updated successfully' });
+  } catch (error: any) {
+    console.error('Error updating config:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

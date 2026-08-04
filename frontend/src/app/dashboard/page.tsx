@@ -19,6 +19,28 @@ interface Repository {
   language: string;
   description: string;
 }
+const getLanguageColor = (language: string | null) => {
+  switch (language?.toLowerCase()) {
+    case 'javascript': return 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]';
+    case 'typescript': return 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]';
+    case 'python': return 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]';
+    case 'html': return 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]';
+    case 'css': return 'bg-blue-300 shadow-[0_0_8px_rgba(147,197,253,0.6)]';
+    case 'java': return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]';
+    case 'c++': return 'bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.6)]';
+    case 'c#': return 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]';
+    case 'php': return 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]';
+    case 'ruby': return 'bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.6)]';
+    case 'go': return 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]';
+    case 'rust': return 'bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.6)]';
+    case 'vue': return 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]';
+    case 'swift': return 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]';
+    case 'kotlin': return 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]';
+    case 'dart': return 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.6)]';
+    case 'shell': return 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]';
+    default: return 'bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.6)]';
+  }
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -29,6 +51,11 @@ export default function DashboardPage() {
   const [isReposLoading, setIsReposLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [showOnboardingPopup, setShowOnboardingPopup] = useState(false);
+  const [openRouterKey, setOpenRouterKey] = useState('');
+  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash');
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
 
   // Client-side pagination and filtering
   const filteredRepos = repos.filter(repo => 
@@ -41,7 +68,7 @@ export default function DashboardPage() {
   const paginatedRepos = filteredRepos.slice((page - 1) * reposPerPage, page * reposPerPage);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndConfig = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -50,10 +77,34 @@ export default function DashboardPage() {
       }
       
       setUser(session.user);
+
+      // Check if user has AI config set
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/config`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          }
+        });
+        if (res.ok) {
+          const config = await res.json();
+          // config can be null if the user hasn't synced yet or doesn't exist
+          if (!config || !config.openRouterKey) {
+            setShowOnboardingPopup(true);
+          }
+        } else {
+          // If the request fails, it might be because the user doesn't have a config yet.
+          setShowOnboardingPopup(true);
+        }
+      } catch (err) {
+        console.error('Failed to fetch AI config:', err);
+        // Fallback to showing it if we can't determine
+        setShowOnboardingPopup(true);
+      }
+
       setIsLoading(false);
     };
     
-    fetchUser();
+    fetchUserAndConfig();
   }, [router]);
 
   useEffect(() => {
@@ -100,6 +151,38 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const handleSaveOnboarding = async () => {
+    if (!openRouterKey.trim()) return;
+    setIsSavingConfig(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/auth/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          openRouterKey,
+          aiModel: selectedModel,
+        }),
+      });
+      
+      if (res.ok) {
+        setShowOnboardingPopup(false);
+      } else {
+        alert('Failed to save AI configuration. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving configuration.');
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
 
   return (
     <AppLayout user={user}>
@@ -196,7 +279,7 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap items-center gap-5 text-xs text-slate-500 mt-3 font-medium">
                             {repo.language && (
                               <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]" />
+                                <div className={`w-2 h-2 rounded-full ${getLanguageColor(repo.language)}`} />
                                 {repo.language}
                               </div>
                             )}
@@ -278,5 +361,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </AppLayout>
+    </>
   );
 }

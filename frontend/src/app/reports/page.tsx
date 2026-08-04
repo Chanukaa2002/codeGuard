@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import Navbar from '@/components/Navbar';
 import AppLayout from '@/components/AppLayout';
-import { FileText, Search, Plus } from 'lucide-react';
+import { FileText, Search, Plus, Trash2 } from 'lucide-react';
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -15,6 +15,10 @@ export default function ReportsPage() {
 
   const [reports, setReports] = useState<any[]>([]);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
+
+  // State for delete confirmation modal
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -53,15 +57,64 @@ export default function ReportsPage() {
         } else {
           console.error('Failed to fetch reports', await res.text());
         }
-      } catch (err) {
-        console.error('Error fetching reports:', err);
-      } finally {
-        setIsReportsLoading(false);
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setReports(data);
+      } else {
+        console.error('Failed to fetch reports');
       }
-    };
+    } catch (err) {
+      console.error('Error fetching reports:', err);
+    } finally {
+      setIsReportsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchReports();
   }, [user]);
+
+  const promptDeleteReport = (e: React.MouseEvent, reportId: string) => {
+    e.stopPropagation();
+    setReportToDelete(reportId);
+  };
+
+  const confirmDeleteReport = async () => {
+    const idToDelete = reportToDelete;
+    if (!idToDelete) return;
+    setIsDeleting(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setIsDeleting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/reports/${idToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+
+      if (res.ok) {
+        // Remove from local state instantly
+        setReports(prev => prev.filter(r => r.id !== idToDelete));
+        setReportToDelete(null);
+      } else {
+        console.error('Failed to delete report');
+        alert('Failed to delete report');
+      }
+    } catch (err) {
+      console.error('Error deleting report:', err);
+      alert('Error deleting report');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -118,8 +171,12 @@ export default function ReportsPage() {
               </div>
             ) : (
               reports.map((report) => (
-                <div key={report.id} className="flex items-start justify-between p-6 border-b border-white/5 last:border-b-0 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group">
-                  <div className="flex items-start gap-4">
+                <div 
+                  key={report.id} 
+                  onClick={() => router.push(`/reports/${report.id}`)}
+                  className="flex items-center justify-between p-6 border-b border-white/5 last:border-b-0 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="flex items-start gap-4 flex-1">
                     <div className="mt-1 p-2 bg-white/5 rounded-xl border border-white/5 group-hover:border-indigo-500/30 group-hover:bg-indigo-500/10 transition-colors">
                       <FileText className="w-5 h-5 text-slate-400 group-hover:text-indigo-400 transition-colors" />
                     </div>
@@ -146,11 +203,18 @@ export default function ReportsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="hidden sm:flex items-center gap-4">
-                    <div className="flex flex-col items-end">
+                  <div className="flex items-center gap-6">
+                    <div className="hidden sm:flex flex-col items-end">
                       <span className="text-2xl font-bold text-slate-200">{report.issuesFound}</span>
                       <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Issues</span>
                     </div>
+                    <button
+                      onClick={(e) => promptDeleteReport(e, report.id)}
+                      className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                      title="Delete Report"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
               ))
@@ -159,5 +223,6 @@ export default function ReportsPage() {
         </div>
       </div>
     </AppLayout>
+    </>
   );
 }

@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
-import { ChevronLeft, ExternalLink, GitBranch, Shield, Loader2, Search } from 'lucide-react';
+import { ChevronLeft, ExternalLink, GitBranch, Shield, Loader2, Search, X } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 
 interface Branch {
@@ -27,6 +27,19 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
+  const [scanReport, setScanReport] = useState<any>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleCancelScan = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    setIsScanning(false);
+    setScanError('Scanning was cancelled by the user.');
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -82,15 +95,66 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
     fetchBranches();
   }, [user, owner, repo]);
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
     if (!selectedBranch) return;
     setIsScanning(true);
+    setScanComplete(false);
+    setScanError(null);
+    setScanReport(null);
     
-    // Placeholder for actual scan logic
-    setTimeout(() => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const githubToken = localStorage.getItem('github_provider_token');
+      
+      if (!session || !githubToken) throw new Error('Not authenticated');
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/github/repos/${owner}/${repo}/scan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          branch: selectedBranch,
+          githubToken,
+        }),
+      });
+
+      if (!res.ok) {
+        const errObj = await res.json().catch(() => ({}));
+        throw new Error(errObj.error || 'Failed to start scan');
+      }
+
+      const { reportId } = await res.json();
+      
+      // Poll for completion
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/reports/${reportId}`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            }
+          });
+          if (checkRes.ok) {
+            const reportData = await checkRes.json();
+            if (reportData.status === 'completed' || reportData.status === 'failed') {
+              if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+              pollIntervalRef.current = null;
+              setIsScanning(false);
+              setScanComplete(true);
+              setScanReport(reportData);
+            }
+          }
+        } catch (pollErr) {
+          console.error('Polling error:', pollErr);
+        }
+      }, 5000); // Check every 5 seconds
+      
+    } catch (err: any) {
+      console.error(err);
+      setScanError(err.message || 'An error occurred while starting the scan');
       setIsScanning(false);
-      setScanComplete(true);
-    }, 3000);
+    }
   };
 
   if (isLoading) {
@@ -213,15 +277,64 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
                   )}
                 </button>
               </div>
+              
+              {scanError && (
+                <div className="mt-6 bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">
+                  {scanError}
+                </div>
+              )}
             </div>
 
-            {scanComplete && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-emerald-400">
-                <div className="flex items-center gap-3 font-semibold mb-2">
-                  <Shield className="w-5 h-5" />
-                  Analysis Finished
+            {scanComplete && scanReport && (
+              <div className={`border rounded-2xl p-6 ${scanReport.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3 font-semibold">
+                    <Shield className="w-5 h-5" />
+                    {scanReport.status === 'completed' ? 'Analysis Finished' : 'Analysis Failed'}
+                  </div>
+                  {scanReport.status === 'completed' && (
+                    <div className="text-sm font-bold bg-emerald-500/20 px-3 py-1 rounded-full">Score: {scanReport.score}/100</div>
+                  )}
                 </div>
-                <p className="text-sm text-emerald-400/80">The repository has been successfully scanned. No critical vulnerabilities found in the selected branch.</p>
+                
+                {scanReport.status === 'completed' ? (
+                  <>
+                    <p className="text-sm text-emerald-400/80 mb-4">{scanReport.summary || 'The repository has been successfully scanned.'}</p>
+                    {scanReport.issuesFound > 0 ? (
+                      <div className="mt-4 space-y-3">
+                        <h4 className="font-semibold text-emerald-300">Issues Found ({scanReport.issuesFound})</h4>
+                        {(scanReport.details as any[])?.map((issue, idx) => (
+                          <div key={idx} className="bg-[#050505]/50 border border-emerald-500/20 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold text-emerald-300">{issue.title}</span>
+                              <div className="flex gap-2">
+                                {issue.category && <span className="text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">{issue.category}</span>}
+                                <span className="text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-500/20">{issue.severity}</span>
+                              </div>
+                            </div>
+                            <p className="text-sm text-emerald-400/80">{issue.description}</p>
+                            {issue.file && (
+                              <p className="text-xs text-emerald-400/60 mt-2 font-mono">File: {issue.file} {issue.line ? `(Line ${issue.line})` : ''}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-emerald-400/80">No issues found in this repository!</p>
+                    )}
+                    <div className="mt-6 pt-4 border-t border-emerald-500/20 flex items-center justify-between">
+                      <p className="text-sm text-emerald-400/80">For more info go to:</p>
+                      <button 
+                        onClick={() => router.push(`/reports/${scanReport.id}`)}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                      >
+                        View Full Report
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-red-400/80">An error occurred during analysis. Please try again later.</p>
+                )}
               </div>
             )}
 
@@ -251,5 +364,6 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
         </div>
       </div>
     </AppLayout>
+    </>
   );
 }
