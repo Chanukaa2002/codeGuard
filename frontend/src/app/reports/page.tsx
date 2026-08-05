@@ -41,29 +41,12 @@ export default function ReportsPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-<<<<<<< HEAD
-      setIsReportsLoading(true);
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/reports`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            Accept: 'application/json',
-          }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setReports(data);
-        } else {
-          console.error('Failed to fetch reports', await res.text());
-=======
     setIsReportsLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/reports`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           Accept: 'application/json',
->>>>>>> llm-dev
         }
       });
       
@@ -133,10 +116,6 @@ export default function ReportsPage() {
   }
 
   return (
-<<<<<<< HEAD
-    <AppLayout user={user}>
-      <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
-=======
     <>
       {reportToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -150,10 +129,6 @@ export default function ReportsPage() {
                 </div>
                 <h3 className="text-xl font-bold text-white">Delete Report</h3>
               </div>
-              
-              <p className="text-slate-300 mb-8 text-sm leading-relaxed">
-                Are you sure you want to permanently delete this report? This action cannot be undone and the report data will be lost forever.
-              </p>
               
               <div className="flex flex-col sm:flex-row justify-end gap-3">
                 <button
@@ -185,7 +160,6 @@ export default function ReportsPage() {
 
       <AppLayout user={user}>
         <div className="max-w-7xl mx-auto py-2 w-full">
->>>>>>> llm-dev
         <div className="max-w-4xl mx-auto space-y-6">
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2">

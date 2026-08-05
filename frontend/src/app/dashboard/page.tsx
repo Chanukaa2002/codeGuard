@@ -185,10 +185,6 @@ export default function DashboardPage() {
   };
 
   return (
-<<<<<<< HEAD
-    <AppLayout user={user}>
-      <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
-=======
     <>
       {showOnboardingPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
@@ -256,7 +252,6 @@ export default function DashboardPage() {
       
       <AppLayout user={user}>
         <div className="max-w-7xl mx-auto py-2 w-full">
->>>>>>> llm-dev
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Main Dashboard Area */}
