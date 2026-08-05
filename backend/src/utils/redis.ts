@@ -1,25 +1,21 @@
-import Redis from 'ioredis';
-import dotenv from 'dotenv';
+// A simple in-memory cache to replace Redis since we are running locally without it
+const cache = new Map<string, { value: string; expiresAt: number }>();
 
-dotenv.config();
-
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-
-// Initialize the Redis client
-export const redis = new Redis(redisUrl, {
-  enableOfflineQueue: false, // Fail fast if Redis is down
-  // Retry strategy just in case Redis is temporarily down
-  retryStrategy: (times) => {
-    if (times > 3) return null; // Stop retrying and emit error
-    const delay = Math.min(times * 50, 2000);
-    return delay;
+export const redis = {
+  get: async (key: string) => {
+    const item = cache.get(key);
+    if (!item) return null;
+    if (Date.now() > item.expiresAt) {
+      cache.delete(key);
+      return null;
+    }
+    return item.value;
   },
-});
+  set: async (key: string, value: string, mode?: string, durationSeconds?: number) => {
+    const expiresAt = durationSeconds ? Date.now() + durationSeconds * 1000 : Infinity;
+    cache.set(key, { value, expiresAt });
+    return 'OK';
+  }
+};
 
-redis.on('connect', () => {
-  console.log('Successfully connected to Redis');
-});
-
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+console.log('Successfully initialized in-memory cache (Redis disabled)');
