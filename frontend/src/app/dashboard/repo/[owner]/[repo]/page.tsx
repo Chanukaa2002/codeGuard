@@ -166,39 +166,8 @@ export default function RepoConfigurationPage({ params }: { params: Promise<{ ow
   }
 
   return (
-    <>
-      {isScanning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-indigo-950/90 border border-indigo-500/30 rounded-2xl p-8 max-w-sm w-full shadow-[0_0_40px_rgba(99,102,241,0.15)] flex flex-col items-center relative overflow-hidden transform transition-all animate-in zoom-in-95 duration-300 text-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 pointer-events-none" />
-            
-            <div className="relative z-10 w-full flex flex-col items-center">
-              <div className="relative flex items-center justify-center mb-6">
-                <div className="w-20 h-20 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-                <div className="absolute flex items-center justify-center w-full h-full">
-                  <Shield className="w-8 h-8 text-indigo-400 animate-pulse" />
-                </div>
-              </div>
-              
-              <h3 className="text-xl font-bold text-white mb-2">Analysis in Progress</h3>
-              <p className="text-sm text-slate-300 mb-8">
-                Please wait while we scan your repository for security vulnerabilities and code quality issues.
-              </p>
-              
-              <button
-                onClick={handleCancelScan}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 transition-colors font-medium"
-              >
-                <X className="w-4 h-4" />
-                Cancel Scanning
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <AppLayout user={user}>
-        <div className="max-w-5xl mx-auto py-8 px-4 w-full">
+    <AppLayout user={user}>
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 w-full">
         
         {/* Navigation */}
         <button 

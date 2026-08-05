@@ -36,17 +36,26 @@ export default function ReportsPage() {
     fetchUser();
   }, [router]);
 
-  const fetchReports = async () => {
-    if (!user) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+  useEffect(() => {
+    const fetchReports = async () => {
+      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    setIsReportsLoading(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/reports`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          Accept: 'application/json',
+      setIsReportsLoading(true);
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/reports`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            Accept: 'application/json',
+          }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          setReports(data);
+        } else {
+          console.error('Failed to fetch reports', await res.text());
         }
       });
       
@@ -116,50 +125,8 @@ export default function ReportsPage() {
   }
 
   return (
-    <>
-      {reportToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-indigo-950/90 border border-red-500/30 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-[0_0_40px_rgba(239,68,68,0.15)] relative overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-orange-500/10 pointer-events-none" />
-            
-            <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-red-500/20 rounded-full border border-red-500/30">
-                  <Trash2 className="w-6 h-6 text-red-400" />
-                </div>
-                <h3 className="text-xl font-bold text-white">Delete Report</h3>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row justify-end gap-3">
-                <button
-                  onClick={() => setReportToDelete(null)}
-                  disabled={isDeleting}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDeleteReport}
-                  disabled={isDeleting}
-                  className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:hover:bg-red-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] flex items-center justify-center gap-2"
-                >
-                  {isDeleting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    'Delete Report'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <AppLayout user={user}>
-        <div className="max-w-7xl mx-auto py-2 w-full">
+    <AppLayout user={user}>
+      <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
         <div className="max-w-4xl mx-auto space-y-6">
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2">
