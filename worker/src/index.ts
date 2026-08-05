@@ -202,7 +202,7 @@ app.post('/process', (req, res) => {
   res.status(202).json({ message: 'Job accepted' });
 });
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`Worker listening for HTTP jobs on port ${PORT}`);
 });
