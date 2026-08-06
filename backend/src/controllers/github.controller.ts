@@ -1,13 +1,18 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { githubService } from '../services/github.service';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
 export class GithubController {
-  async getRepos(req: AuthenticatedRequest, res: Response): Promise<any> {
+  async getRepos(req: Request, res: Response): Promise<any> {
     try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Missing Authorization header' });
+      }
+      const token = authHeader.replace('Bearer ', '');
+      
       const page = req.query.page as string || '1';
       const perPage = req.query.per_page as string || '10';
-      const token = req.token!;
 
       const data = await githubService.fetchRepos(token, page, perPage);
       return res.json(data);
@@ -17,11 +22,16 @@ export class GithubController {
     }
   }
 
-  async getBranches(req: AuthenticatedRequest, res: Response): Promise<any> {
+  async getBranches(req: Request, res: Response): Promise<any> {
     try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Missing Authorization header' });
+      }
+      const token = authHeader.replace('Bearer ', '');
+
       const owner = req.params.owner as string;
       const repo = req.params.repo as string;
-      const token = req.token!;
 
       const data = await githubService.fetchBranches(token, owner, repo);
       return res.json(data);
