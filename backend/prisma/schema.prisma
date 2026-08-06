@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid()) // Corresponds to Supabase auth.users.id
+  id        String   @id @default(uuid())
   email     String   @unique
   name      String?
   avatarUrl String?
@@ -35,6 +30,6 @@ model ScanReport {
   issuesFound    Int      @default(0)
   score          Int      @default(100)
   summary        String?
-  details        Json?    // Structured analysis data
+  details        Json?
   createdAt      DateTime @default(now())
 }

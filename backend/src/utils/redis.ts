@@ -15,6 +15,10 @@ export const redis = {
     const expiresAt = durationSeconds ? Date.now() + durationSeconds * 1000 : Infinity;
     cache.set(key, { value, expiresAt });
     return 'OK';
+  },
+  del: async (key: string) => {
+    cache.delete(key);
+    return 1;
   }
 };
 
