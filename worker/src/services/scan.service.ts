@@ -115,7 +115,7 @@ ${codeContext}
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: aiModel || 'google/gemini-2.5-flash',
+            model: aiModel || 'google/gemini-2.5-flash-lite',
             messages: [{ role: 'user', content: prompt }],
             response_format: { type: 'json_object' },
             temperature: 0,
@@ -133,6 +133,13 @@ ${codeContext}
       }
 
       const aiData = await openRouterRes.json();
+
+      // Guard: some models return HTTP 200 but with an error in the body instead of choices
+      if (!aiData.choices || aiData.choices.length === 0) {
+        const bodyError = aiData.error?.message || JSON.stringify(aiData);
+        throw new Error(`OpenRouter returned no choices. Model error: ${bodyError}`);
+      }
+
       const resultText = aiData.choices[0].message.content;
       
       // Parse JSON safely
